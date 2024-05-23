@@ -32,9 +32,8 @@ public class SaveTrackingData : MonoBehaviour
 
     /// <summary>
     /// Target이 될 얼굴 Renderer
-    /// </summary>
-    [SerializeField]
-    public static SkinnedMeshRenderer targetFaceRenderer;
+    /// </summary>    
+    public SkinnedMeshRenderer targetFaceRenderer;
 
     private Mesh faceSkinnedMesh;
     private int blendShapeCount;
@@ -44,7 +43,7 @@ public class SaveTrackingData : MonoBehaviour
     /// </summary>
     private List<BlendValue> blendValue_List = new List<BlendValue>();
 
-    public static List<bool> checkParameter_List = new List<bool>();
+    public List<bool> checkParameter_List;
 
     /// <summary>
     /// 
@@ -61,34 +60,6 @@ public class SaveTrackingData : MonoBehaviour
     [Header("[Custom Editor Value]")]
     public bool isFold = false;
 
-    //private void Reset()
-    //{
-    //    if (targetFaceRenderer == null)
-    //        return;
-
-    //    for (int i = 0; i < targetFaceRenderer.sharedMesh.blendShapeCount; i++)
-    //    {
-    //        checkParameter_List.Add(true);
-    //    }
-
-    //}
-
-    /// <summary>
-    /// Blend Parameter 리스트 추가용 생성자 - Editor에서 작동
-    /// </summary>
-    static SaveTrackingData()
-    {
-        Debug.Log("?");
-         if (targetFaceRenderer == null)
-            return;
-
-        Debug.Log("<color=yellow> Blend Parameter 리스트 추가</color>");
-        for (int i = 0; i < targetFaceRenderer.sharedMesh.blendShapeCount; i++)
-        {
-            checkParameter_List.Add(true);
-        }
-
-    }
 
     private void Awake()
     {
@@ -104,12 +75,23 @@ public class SaveTrackingData : MonoBehaviour
     {
         CreateDataFolder();
 
+        if (targetFaceRenderer != null)
+        {
+            for (int i = 0; i < targetFaceRenderer.sharedMesh.blendShapeCount; i++)
+            {
+                checkParameter_List.Add(true);
+            }
+        }
+
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.T))
+        {
+            Debug.Log($"<color=yellow>Tracking Data Save 시작</color>");
             checkTracking = !checkTracking;
+        }
 
         if (Input.GetKeyDown(KeyCode.Space))
             WriteCSV(dataFolderName);
@@ -178,10 +160,19 @@ public class SaveTrackingData : MonoBehaviour
 
         for (int i = 0; i < blendShapeCount; i++)
         {
-            double trackingValue = Math.Round(targetFaceRenderer.GetBlendShapeWeight(i), 3);
-            blendDataLine.Append($"{trackingValue}, ");
+            if (checkParameter_List[i])
+            {
+                double trackingValue = Math.Round(targetFaceRenderer.GetBlendShapeWeight(i), 3);
+                blendDataLine.Append($"{trackingValue},");
 
-            //blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), (float)trackingValue);
+                //blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), (float)trackingValue);
+            }
+            else
+            {
+                blendDataLine.Append($"Null,");
+                //blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), 999999);
+
+            }
         }
 
         trackingBuilder.AppendLine(blendDataLine.ToString());
@@ -241,7 +232,7 @@ public class SaveTrackingDataEditor : Editor
                 {
                     EditorGUILayout.BeginHorizontal();
                     {
-                        EditorGUILayout.LabelField("Tracking Data 체크 주기 사용 여부", GUILayout.MaxWidth(220));
+                        EditorGUILayout.LabelField("Tracking Data 체크 주기(초) 사용 여부", GUILayout.MaxWidth(220));
                         TrackingData.trackingCycle_UseSecond = EditorGUILayout.Toggle(TrackingData.trackingCycle_UseSecond);
                     }
                     EditorGUILayout.EndHorizontal();
@@ -256,14 +247,14 @@ public class SaveTrackingDataEditor : Editor
                         EditorGUILayout.EndHorizontal();
                     }
 
-                    if (SaveTrackingData.targetFaceRenderer != null)
+                    if (TrackingData.targetFaceRenderer != null)
                     {
                         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                         {
                             EditorGUILayout.BeginHorizontal();
                             {
                                 EditorGUILayout.LabelField("", GUILayout.Width(10));
-                                TrackingData.isFold = EditorGUILayout.Foldout(TrackingData.isFold, "<Blend Shape Parameter 목록>", true);
+                                TrackingData.isFold = EditorGUILayout.Foldout(TrackingData.isFold, $"[{TrackingData.targetFaceRenderer.name}] Blend Shape Parameter 목록", true);
 
                             }
                             EditorGUILayout.EndHorizontal();
@@ -273,11 +264,20 @@ public class SaveTrackingDataEditor : Editor
                                 //EditorGUI.indentLevel++;
                                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                                 {
-                                    for (int i = 0; i < SaveTrackingData.targetFaceRenderer.sharedMesh.blendShapeCount; i++)
+                                    GUI.color = Color.yellow;
+                                    EditorGUILayout.LabelField("▼ 해당 블랜드 파라미터 데이터를 CSV 파일에 포함시킬지 체크(Play 모드일 때만 설정 가능)", EditorStyles.boldLabel);
+                                    GUI.color = Color.white;
+
+                                    for (int i = 0; i < TrackingData.targetFaceRenderer.sharedMesh.blendShapeCount; i++)
                                     {
                                         EditorGUILayout.BeginHorizontal();
                                         {
-                                            EditorGUILayout.LabelField($"{SaveTrackingData.targetFaceRenderer.sharedMesh.GetBlendShapeName(i)}", GUILayout.MaxWidth(220));
+                                            EditorGUILayout.LabelField($"{TrackingData.targetFaceRenderer.sharedMesh.GetBlendShapeName(i)}", GUILayout.MaxWidth(320));
+
+                                            if (TrackingData.checkParameter_List.Count == TrackingData.targetFaceRenderer.sharedMesh.blendShapeCount)
+                                            {
+                                                TrackingData.checkParameter_List[i] = EditorGUILayout.Toggle(TrackingData.checkParameter_List[i]);
+                                            }
 
                                         }
                                         EditorGUILayout.EndHorizontal();

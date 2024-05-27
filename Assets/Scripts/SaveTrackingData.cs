@@ -5,6 +5,8 @@ using System.IO;
 using System;
 using System.Text;
 using UnityEditor;
+using TMPro;
+using System.Linq;
 
 [InitializeOnLoad]
 public class SaveTrackingData : MonoBehaviour
@@ -34,6 +36,8 @@ public class SaveTrackingData : MonoBehaviour
     /// Target이 될 얼굴 Renderer
     /// </summary>    
     public SkinnedMeshRenderer targetFaceRenderer;
+
+    public TextMeshProUGUI trackingInform_Text;
 
     private Mesh faceSkinnedMesh;
     private int blendShapeCount;
@@ -87,14 +91,17 @@ public class SaveTrackingData : MonoBehaviour
 
     void Update()
     {
+#if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.T))
         {
             Debug.Log($"<color=yellow>Tracking Data Save 시작</color>");
+            SetTrackingLog();
             checkTracking = !checkTracking;
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
             WriteCSV(dataFolderName);
+#endif
 
         if (checkTracking)
         {
@@ -179,6 +186,12 @@ public class SaveTrackingData : MonoBehaviour
         //blendValue_List.Add(blendValue);
     }
 
+    public void SetTrackingLog()
+    {
+        trackingInform_Text.text = $"<size=0.2><color=yellow><b>Face Tracking Start</b></color></size>\n\n" +
+            $"Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond?trackingCheckTime:0)}]</color> Second\n" +
+            $"Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x=>x == true).Count()}/ {checkParameter_List.Count}]</color>";
+    }
 
     /// <summary>
     /// 데이터 저장 폴더를 생성합니다.

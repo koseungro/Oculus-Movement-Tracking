@@ -189,6 +189,7 @@ public class SaveTrackingData : MonoBehaviour
     public void SetTrackingLog()
     {
         trackingInform_Text.text = $"<size=0.2><color=yellow><b>Face Tracking Start</b></color></size>\n\n" +
+            $"Target Mesh : <color=yellow>[{targetFaceRenderer.name}]</color>" +
             $"Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond?trackingCheckTime:0)}]</color> Second\n" +
             $"Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x=>x == true).Count()}/ {checkParameter_List.Count}]</color>";
     }

@@ -27,6 +27,7 @@ public class SaveTrackingData : MonoBehaviour
     private string dataFolderName = "";
     private StringBuilder trackingBuilder = new StringBuilder();
 
+    public bool CheckTracking { get => checkTracking; }
     /// <summary>
     /// Tracking 데이터를 수집 시작할지 체크
     /// </summary>
@@ -61,8 +62,13 @@ public class SaveTrackingData : MonoBehaviour
     public float trackingCheckTime = 0;
     private float curTime = 0;
 
+    private float deltaTime = 0f;
+
+    #region Custom Editor
     [Header("[Custom Editor Value]")]
     public bool isFold = false;
+    public bool allParameterCheck = true;
+    #endregion
 
 
     private void Awake()
@@ -81,6 +87,7 @@ public class SaveTrackingData : MonoBehaviour
 
         if (targetFaceRenderer != null)
         {
+            // Play 하면 List에 Blend Parameter 추가
             for (int i = 0; i < targetFaceRenderer.sharedMesh.blendShapeCount; i++)
             {
                 checkParameter_List.Add(true);
@@ -91,12 +98,15 @@ public class SaveTrackingData : MonoBehaviour
 
     void Update()
     {
+        // 한 프레임에 걸린 시간 계산
+        deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
+
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.T))
         {
             Debug.Log($"<color=yellow>Tracking Data Save 시작</color>");
-            SetTrackingLog();
             checkTracking = !checkTracking;
+            SetTrackingLog(checkTracking);
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -105,6 +115,8 @@ public class SaveTrackingData : MonoBehaviour
 
         if (checkTracking)
         {
+            SetTrackingLog(checkTracking);
+
             if (trackingCycle_UseSecond)
             {
                 if (curTime > trackingCheckTime)
@@ -120,7 +132,18 @@ public class SaveTrackingData : MonoBehaviour
             else
                 UpdateTrackingData(); // 프레임 단위로 체크
 
+        }
+    }
 
+    public void SwitchTrackingState()
+    {
+        checkTracking = !checkTracking;
+
+        // Tracking 종료
+        if (checkTracking == false)
+        {
+            SetTrackingLog(false);
+            WriteCSV(dataFolderName);
         }
     }
 
@@ -186,12 +209,20 @@ public class SaveTrackingData : MonoBehaviour
         //blendValue_List.Add(blendValue);
     }
 
-    public void SetTrackingLog()
+    /// <summary>
+    /// 현재 Tracking 중 상태 데이터를 Canvas에 업데이트 합니다.
+    /// </summary>
+    public void SetTrackingLog(bool isStart)
     {
-        trackingInform_Text.text = $"<size=0.2><color=yellow><b>Face Tracking Start</b></color></size>\n\n" +
-            $"Target Mesh : <color=yellow>[{targetFaceRenderer.name}]</color>" +
-            $"Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond?trackingCheckTime:0)}]</color> Second\n" +
-            $"Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x=>x == true).Count()}/ {checkParameter_List.Count}]</color>";
+        double ms = isStart ? Math.Round((deltaTime * 1000f), 2) : 0;
+        double fps = isStart ? Math.Round((1.0f / deltaTime), 2) : 0;
+
+        trackingInform_Text.text = $"Face Tracking State : <color=yellow>[{checkTracking}]</color>\n" +
+            $"Target Mesh : <color=yellow>[{targetFaceRenderer.name}]</color>\n" +
+            $"Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond ? trackingCheckTime : 0)}]</color> Second\n" +
+            $"Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x => x == true).Count()}/ {checkParameter_List.Count}]</color>\n" +
+            $"Current FPS : <color=yellow>{fps} FPS/ ({ms} ms)</color>";
+
     }
 
     /// <summary>
@@ -216,7 +247,7 @@ public class SaveTrackingData : MonoBehaviour
     }
 }
 
-
+#if UNITY_EDITOR
 [CustomEditor(typeof(SaveTrackingData))]
 public class SaveTrackingDataEditor : Editor
 {
@@ -282,12 +313,36 @@ public class SaveTrackingDataEditor : Editor
                                     EditorGUILayout.LabelField("▼ 해당 블랜드 파라미터 데이터를 CSV 파일에 포함시킬지 체크(Play 모드일 때만 설정 가능)", EditorStyles.boldLabel);
                                     GUI.color = Color.white;
 
+                                    if (TrackingData.checkParameter_List.Count != 0)
+                                    {
+                                        EditorGUILayout.BeginVertical();
+                                        {
+                                            EditorGUILayout.BeginHorizontal();
+                                            {
+                                                if (GUILayout.Button("모든 Blend Parameter 체크/ 해제"))
+                                                {
+                                                    TrackingData.allParameterCheck = !TrackingData.allParameterCheck;
+
+                                                    for (int i = 0; i < TrackingData.checkParameter_List.Count; i++)
+                                                    {
+                                                        TrackingData.checkParameter_List[i] = TrackingData.allParameterCheck;
+                                                    }
+
+                                                }
+                                            }
+                                            EditorGUILayout.EndHorizontal();
+                                        }
+                                        EditorGUILayout.EndVertical();
+                                    }
+
+                                    EditorGUILayout.Space();
                                     for (int i = 0; i < TrackingData.targetFaceRenderer.sharedMesh.blendShapeCount; i++)
                                     {
                                         EditorGUILayout.BeginHorizontal();
                                         {
                                             EditorGUILayout.LabelField($"{TrackingData.targetFaceRenderer.sharedMesh.GetBlendShapeName(i)}", GUILayout.MaxWidth(320));
 
+                                            // Play 모드일 때만 Inspector에 표시
                                             if (TrackingData.checkParameter_List.Count == TrackingData.targetFaceRenderer.sharedMesh.blendShapeCount)
                                             {
                                                 TrackingData.checkParameter_List[i] = EditorGUILayout.Toggle(TrackingData.checkParameter_List[i]);
@@ -321,3 +376,4 @@ public class SaveTrackingDataEditor : Editor
     }
 
 }
+#endif

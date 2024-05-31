@@ -8,6 +8,9 @@ using UnityEditor;
 using TMPro;
 using System.Linq;
 
+/// <summary>
+/// 표정 변화 Blend Shape 관련 Parameter을 실시간으로 추적, 저장할 수 있도록 관리하는 클래스
+/// </summary>
 [InitializeOnLoad]
 public class SaveTrackingData : MonoBehaviour
 {
@@ -62,6 +65,12 @@ public class SaveTrackingData : MonoBehaviour
     public float trackingCheckTime = 0;
     private float curTime = 0;
 
+    /// <summary>
+    /// Tracking 지속 중 타임 체크용
+    /// </summary>
+    private TimeSpan trackingTime;
+    private DateTime trackingStartTime;
+
     private float deltaTime = 0f;
 
     #region Custom Editor
@@ -101,22 +110,22 @@ public class SaveTrackingData : MonoBehaviour
         // 한 프레임에 걸린 시간 계산
         deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
 
+        SetTrackingLog();
+
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.T))
         {
             Debug.Log($"<color=yellow>Tracking Data Save 시작</color>");
             checkTracking = !checkTracking;
-            SetTrackingLog(checkTracking);
+
+            if(checkTracking == false)
+                WriteCSV(dataFolderName);
+
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
-            WriteCSV(dataFolderName);
 #endif
-
         if (checkTracking)
         {
-            SetTrackingLog(checkTracking);
-
             if (trackingCycle_UseSecond)
             {
                 if (curTime > trackingCheckTime)
@@ -142,7 +151,6 @@ public class SaveTrackingData : MonoBehaviour
         // Tracking 종료
         if (checkTracking == false)
         {
-            SetTrackingLog(false);
             WriteCSV(dataFolderName);
         }
     }
@@ -210,18 +218,32 @@ public class SaveTrackingData : MonoBehaviour
     }
 
     /// <summary>
-    /// 현재 Tracking 중 상태 데이터를 Canvas에 업데이트 합니다.
+    /// 현재 Tracking 중 상태 데이터를 Canvas에 실시간으로 업데이트 합니다.
     /// </summary>
-    public void SetTrackingLog(bool isStart)
+    public void SetTrackingLog()
     {
-        double ms = isStart ? Math.Round((deltaTime * 1000f), 2) : 0;
-        double fps = isStart ? Math.Round((1.0f / deltaTime), 2) : 0;
+        if (checkTracking)
+        {
+            // 시작 시간 체크
+            if (trackingStartTime == default(DateTime))
+                trackingStartTime = DateTime.Now;
+        }
+        else
+        {
+            // 시작 시간 초기화
+            trackingStartTime = default(DateTime);
+        }
 
-        trackingInform_Text.text = $"Face Tracking State : <color=yellow>[{checkTracking}]</color>\n" +
-            $"Target Mesh : <color=yellow>[{targetFaceRenderer.name}]</color>\n" +
-            $"Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond ? trackingCheckTime : 0)}]</color> Second\n" +
-            $"Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x => x == true).Count()}/ {checkParameter_List.Count}]</color>\n" +
-            $"Current FPS : <color=yellow>{fps} FPS/ ({ms} ms)</color>";
+        double ms = Math.Round((deltaTime * 1000f), 2);
+        double fps = Math.Round((1.0f / deltaTime), 2);
+        trackingTime = DateTime.Now - trackingStartTime;
+
+        trackingInform_Text.text = $"- Face Tracking State : {(checkTracking? $"<color=yellow>[{checkTracking}]</color>":$"<color=red>[{checkTracking}]</color>")}\n" +
+            $"- Target Mesh : <color=yellow>[{targetFaceRenderer.name}]</color>\n" +
+            $"- Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond ? trackingCheckTime : 0)}]</color> Second\n" +
+            $"- Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x => x == true).Count()}/ {checkParameter_List.Count}]</color>\n" +
+            $"- Current FPS : <color=yellow>{fps} FPS/ ({ms} ms)</color>\n" +
+            $"- Tracking Accumulated Time : <color=yellow>[{(checkTracking ? trackingTime.ToString(@"mm\:ss\.ff") : trackingStartTime.ToString("mm:ss:ff"))}]</color>\n";
 
     }
 

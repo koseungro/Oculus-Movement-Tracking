@@ -2942,11 +2942,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e0dc9ceff972b2418a59f4291372878, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dataFolderName: 
   targetFaceRenderer: {fileID: 922859937}
   trackingInform_Text: {fileID: 1882537978}
   checkParameter_List: 
   trackingCycle_UseSecond: 0
   trackingCheckTime: 0
+  useVideo: 1
+  videoName: Elevator_01.mp4
   isFold: 1
   allParameterCheck: 1
 --- !u!224 &1277884446 stripped

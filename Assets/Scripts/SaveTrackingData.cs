@@ -7,11 +7,11 @@ using System.Text;
 using UnityEditor;
 using TMPro;
 using System.Linq;
+using FNI;
 
 /// <summary>
 /// 표정 변화 Blend Shape 관련 Parameter을 실시간으로 추적, 저장할 수 있도록 관리하는 클래스
 /// </summary>
-[InitializeOnLoad]
 public class SaveTrackingData : MonoBehaviour
 {
     struct BlendValue
@@ -27,7 +27,24 @@ public class SaveTrackingData : MonoBehaviour
         }
     }
 
-    private string dataFolderName = "";
+    #region Singleton
+    private static SaveTrackingData _instance;
+    public static SaveTrackingData Instance
+    {
+        get
+        {
+            if (_instance == null)
+                _instance = FindObjectOfType<SaveTrackingData>();
+
+            return _instance;
+        }
+    }
+    #endregion
+
+    /// <summary>
+    /// Tracking 데이터가 저장될 경로
+    /// </summary>
+    public string dataFolderName = "";
     private StringBuilder trackingBuilder = new StringBuilder();
 
     public bool CheckTracking { get => checkTracking; }
@@ -66,6 +83,12 @@ public class SaveTrackingData : MonoBehaviour
     private float curTime = 0;
 
     /// <summary>
+    /// 360 비디오 사용 여부
+    /// </summary>
+    public bool useVideo = false;
+    public string videoName = "";
+
+    /// <summary>
     /// Tracking 지속 중 타임 체크용
     /// </summary>
     private TimeSpan trackingTime;
@@ -93,6 +116,9 @@ public class SaveTrackingData : MonoBehaviour
     void Start()
     {
         CreateDataFolder();
+
+        if (useVideo)
+            VR_VideoPlayer.Instance.SetVideo(videoName);
 
         if (targetFaceRenderer != null)
         {

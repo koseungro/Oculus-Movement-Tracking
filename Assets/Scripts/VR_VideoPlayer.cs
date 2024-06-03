@@ -133,10 +133,6 @@ namespace FNI
 
         }
 
-        private void Start()
-        {
-            StartCoroutine(Load(Application.dataPath + "/../Video/Elevator_01.mp4"));
-        }
 
 
         private void Update()
@@ -186,6 +182,26 @@ namespace FNI
         //    }
         //}
 
+        public void SetVideo(string videoName)
+        {
+#if UNITY_EDITOR
+            string path = Application.dataPath + "/../Video/";
+#else
+            string path = Application.persistentDataPath + "/../Video/";
+#endif
+
+            if (CheckFileExists(path + videoName))
+            {
+                StartCoroutine(Load(path + videoName));
+            }
+            else
+            {
+                // Video 폴더 생성
+                Directory.CreateDirectory(path);
+
+                StartCoroutine(Load(path + videoName));
+            }
+        }
 
         /// <summary>
         /// Load 기능
@@ -250,7 +266,7 @@ namespace FNI
             MyVideoPlayer.Play();
             endVideoCheck = false;
 
-            
+
             // 재생 영상 정보 Debug
             Debug.Log($"[Play/VR_VideoPlayer] 영상 재생 정보\nTime : <color=yellow>{MyVideoPlayer.time}</color>\n" +
                 $"영상 길이 : <color=yellow>{Duration}초</color>\n" +
@@ -278,7 +294,7 @@ namespace FNI
         {
             if (!IsPrepared) return;
             Pause();
-            Seek(0);            
+            Seek(0);
         }
 
         /// <summary>

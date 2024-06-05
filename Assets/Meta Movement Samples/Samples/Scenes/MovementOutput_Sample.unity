@@ -3283,6 +3283,10 @@ PrefabInstance:
       propertyPath: m_Url
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2616162883810197884, guid: 71526336ef1a3f9478502c1b7ad903a9, type: 3}
+      propertyPath: m_Looping
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2616162883986861056, guid: 71526336ef1a3f9478502c1b7ad903a9, type: 3}
       propertyPath: m_Name
       value: VR3D

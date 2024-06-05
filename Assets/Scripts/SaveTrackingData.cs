@@ -14,12 +14,13 @@ using FNI;
 /// </summary>
 public class SaveTrackingData : MonoBehaviour
 {
-    struct BlendValue
+    [Serializable]
+    public class BlendValueSet
     {
         /// <summary>
-        /// <Blend parameter name, 값> 딕셔너리 배열
+        /// <Blend parameter name, 수치 값> 딕셔너리 배열
         /// </summary>
-        public Dictionary<string, float> blendDic;
+        public Dictionary<string, float> blendDic = new Dictionary<string, float>();
 
         public void SetBlendDic(string str, float value)
         {
@@ -46,6 +47,10 @@ public class SaveTrackingData : MonoBehaviour
     /// </summary>
     public string dataFolderName = "";
     private StringBuilder trackingBuilder = new StringBuilder();
+    /// <summary>
+    /// 해당 문자열의 개수
+    /// </summary>
+    private int StringLength { get => trackingBuilder.Length; }
 
     public bool CheckTracking { get => checkTracking; }
     /// <summary>
@@ -64,15 +69,16 @@ public class SaveTrackingData : MonoBehaviour
     private int blendShapeCount;
 
     /// <summary>
-    /// 프레임 당 [Blend 이름 - Value] 세트 리스트
+    /// 외부 접근용
     /// </summary>
-    private List<BlendValue> blendValue_List = new List<BlendValue>();
+    public List<BlendValueSet> BlendValue_List { get => blendValue_List; }
+    /// <summary>
+    /// 프레임(체크 주기) 당 [Blend 이름 - Value] 세트 리스트
+    /// </summary>
+    private List<BlendValueSet> blendValue_List = new List<BlendValueSet>();
 
     public List<bool> checkParameter_List;
 
-    /// <summary>
-    /// 
-    /// </summary>
     [Tooltip("트래킹 체크 주기를 '초'로 설정할지 여부(false : fps)")]
     public bool trackingCycle_UseSecond = false;
 
@@ -142,10 +148,7 @@ public class SaveTrackingData : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.T))
         {
             Debug.Log($"<color=yellow>Tracking Data Save 시작</color>");
-            checkTracking = !checkTracking;
-
-            if(checkTracking == false)
-                WriteCSV(dataFolderName);
+            SwitchTrackingState();
 
         }
 
@@ -166,7 +169,6 @@ public class SaveTrackingData : MonoBehaviour
             }
             else
                 UpdateTrackingData(); // 프레임 단위로 체크
-
         }
     }
 
@@ -174,12 +176,17 @@ public class SaveTrackingData : MonoBehaviour
     {
         checkTracking = !checkTracking;
 
-        // Tracking 종료
-        if (checkTracking == false)
+        if (checkTracking) // Tracking 시작
+        {
+            blendValue_List.Clear();
+        }
+        else // Tracking 종료
         {
             WriteCSV(dataFolderName);
+
         }
     }
+
 
     /// <summary>
     /// Tracking Data가 저장 될 CSV 파일을 생성합니다.
@@ -220,27 +227,28 @@ public class SaveTrackingData : MonoBehaviour
     private void UpdateTrackingData()
     {
         StringBuilder blendDataLine = new StringBuilder();
-        //BlendValue blendValue = new BlendValue();
+        BlendValueSet blendValue = new BlendValueSet();
 
         for (int i = 0; i < blendShapeCount; i++)
         {
-            if (checkParameter_List[i])
+            if (checkParameter_List[i]) // 해당 파라미터 체크 허용
             {
                 double trackingValue = Math.Round(targetFaceRenderer.GetBlendShapeWeight(i), 3);
                 blendDataLine.Append($"{trackingValue},");
 
-                //blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), (float)trackingValue);
+                blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), (float)trackingValue);
             }
             else
             {
                 blendDataLine.Append($"Null,");
-                //blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), 999999);
+
+                blendValue.SetBlendDic(faceSkinnedMesh.GetBlendShapeName(i), 999999);
 
             }
         }
 
         trackingBuilder.AppendLine(blendDataLine.ToString());
-        //blendValue_List.Add(blendValue);
+        blendValue_List.Add(blendValue);
     }
 
     /// <summary>
@@ -264,12 +272,13 @@ public class SaveTrackingData : MonoBehaviour
         double fps = Math.Round((1.0f / deltaTime), 2);
         trackingTime = DateTime.Now - trackingStartTime;
 
-        trackingInform_Text.text = $"- Face Tracking State : {(checkTracking? $"<color=yellow>[{checkTracking}]</color>":$"<color=red>[{checkTracking}]</color>")}\n" +
+        trackingInform_Text.text = $"- Face Tracking State : {(checkTracking ? $"<color=yellow>[{checkTracking}]</color>" : $"<color=red>[{checkTracking}]</color>")}\n" +
             $"- Target Mesh : <color=yellow>[{targetFaceRenderer.name}]</color>\n" +
             $"- Tracking Data Cycle : <color=yellow>[{(trackingCycle_UseSecond ? trackingCheckTime : 0)}]</color> Second\n" +
             $"- Tracking Check Parameter Count : <color=yellow>[{checkParameter_List.Where(x => x == true).Count()}/ {checkParameter_List.Count}]</color>\n" +
             $"- Current FPS : <color=yellow>{fps} FPS/ ({ms} ms)</color>\n" +
-            $"- Tracking Accumulated Time : <color=yellow>[{(checkTracking ? trackingTime.ToString(@"mm\:ss\.ff") : trackingStartTime.ToString("mm:ss:ff"))}]</color>\n";
+            $"- Tracking Accumulated Time : <color=yellow>[{(checkTracking ? trackingTime.ToString(@"mm\:ss\.ff") : trackingStartTime.ToString("mm:ss:ff"))}]</color>\n" +
+            $"- Tracking String Length : <color=yellow>[{(checkTracking ? StringLength : 0)}]</color>";
 
     }
 

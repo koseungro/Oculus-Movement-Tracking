@@ -7,7 +7,6 @@ using System.Text;
 using UnityEditor;
 using TMPro;
 using System.Linq;
-using FNI;
 
 /// <summary>
 /// 표정 변화 Blend Shape 관련 Parameter을 실시간으로 추적, 저장할 수 있도록 관리하는 클래스
@@ -122,9 +121,6 @@ public class SaveTrackingData : MonoBehaviour
     void Start()
     {
         CreateDataFolder();
-
-        if (useVideo)
-            VR_VideoPlayer.Instance.SetVideo(videoName);
 
         if (targetFaceRenderer != null)
         {

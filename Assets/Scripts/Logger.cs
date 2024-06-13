@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using DilmerGames.Core.Singletons;
 using TMPro;
 using UnityEngine;
 using System;
@@ -7,7 +6,7 @@ using System.Text;
 
 
 
-public class Logger : Singleton<Logger>
+public class Logger : MonoBehaviour
 {
     [SerializeField]
     private TextMeshProUGUI debugAreaText = null;
